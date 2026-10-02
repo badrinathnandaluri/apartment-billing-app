@@ -7,11 +7,8 @@ Includes Google OAuth protection and Supabase connectivity.
 
 import calendar
 from datetime import datetime
-import base64
-import json
 
 import streamlit as st
-from streamlit_oauth import OAuth2Component
 
 import database as db
 from calculations import (
@@ -30,29 +27,6 @@ st.set_page_config(
     page_icon="🏢",
     layout="wide",
 )
-
-# ---------------------------------------------------------------------------
-# Google OAuth Configuration
-# ---------------------------------------------------------------------------
-CLIENT_ID = st.secrets["google_oauth"]["client_id"]
-CLIENT_SECRET = st.secrets["google_oauth"]["client_secret"]
-REDIRECT_URI = st.secrets["google_oauth"].get("redirect_uri", "http://localhost:8501")
-AUTHORIZE_ENDPOINT = "https://accounts.google.com/o/oauth2/v2/auth"
-TOKEN_ENDPOINT = "https://oauth2.googleapis.com/token"
-REVOKE_ENDPOINT = "https://oauth2.googleapis.com/revoke"
-
-oauth2 = OAuth2Component(CLIENT_ID, CLIENT_SECRET, AUTHORIZE_ENDPOINT, TOKEN_ENDPOINT, TOKEN_ENDPOINT, REVOKE_ENDPOINT)
-
-def get_user_email(token_data):
-    """Extract email from the JWT id_token"""
-    if "id_token" in token_data:
-        id_token = token_data["id_token"]
-        payload = id_token.split(".")[1]
-        payload += "=" * ((4 - len(payload) % 4) % 4)
-        decoded = base64.b64decode(payload).decode("utf-8")
-        data = json.loads(decoded)
-        return data.get("email")
-    return None
 
 # ---------------------------------------------------------------------------
 # Initialize database
@@ -495,22 +469,37 @@ def main_app():
     elif page == "view_records": page_view_records()
 
 
-# --- Auth Logic ---
-if "token" not in st.session_state:
+# ---------------------------------------------------------------------------
+# Simple Authentication
+# ---------------------------------------------------------------------------
+def check_password():
+    """Returns True if the user has entered the correct password."""
+    if st.session_state.get("logged_in", False):
+        return True
+
     st.title("🏢 Apartment Billing App")
-    st.subheader("Welcome! Please log in to continue.")
-    
-    result = oauth2.authorize_button(
-        "Log in with Google", 
-        REDIRECT_URI, 
-        "openid email profile"
-    )
-    
-    if result:
-        st.session_state.token = result["token"]
-        st.rerun()
-else:
-    email = get_user_email(st.session_state.token)
-    if email:
-        st.sidebar.success(f"Logged in as: {email}")
-    main_app()
+    st.subheader("Please log in to continue")
+
+    with st.form("login_form"):
+        username = st.text_input("Username")
+        password = st.text_input("Password", type="password")
+        submit = st.form_submit_button("Log in")
+
+        if submit:
+            if username == st.secrets["app_username"] and password == st.secrets["app_password"]:
+                st.session_state.logged_in = True
+                st.rerun()
+            else:
+                st.error("😕 Incorrect username or password")
+    return False
+
+if not check_password():
+    st.stop()
+
+# If authenticated, show logout and run app
+st.sidebar.success(f"Logged in as: {st.secrets['app_username']}")
+if st.sidebar.button("🚪 Logout"):
+    st.session_state.logged_in = False
+    st.rerun()
+
+main_app()
