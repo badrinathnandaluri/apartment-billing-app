@@ -22,19 +22,19 @@ def _draw_bills_page(
     meter_readings: list[dict],
     maintenance_amount: float
 ):
-    """Draw the flat-wise bills landscape page."""
-    pdf.add_page(orientation="L")
+    """Draw the flat-wise bills portrait page."""
+    pdf.add_page(orientation="P")
     pdf.set_font("helvetica", "B", 16)
     month_str = _format_month(month_year)
     pdf.cell(0, 10, f"Apartment Water Billing - {month_str}", align="C", new_x="LMARGIN", new_y="NEXT")
     pdf.ln(5)
     
-    # Table configuration
-    col_widths = [25, 70, 75, 55, 52]
+    # Table configuration (A4 portrait printable width is ~190mm)
+    col_widths = [18, 55, 55, 31, 31]
     headers = ["Flat No.", "Water Calculation", "Total Bill", "Paid", "Received"]
     
     # Draw Headers
-    pdf.set_font("helvetica", "B", 11)
+    pdf.set_font("helvetica", "B", 10)
     pdf.set_fill_color(220, 220, 220)
     for w, h in zip(col_widths, headers):
         # We don't change line here; just draw side-by-side
@@ -43,8 +43,8 @@ def _draw_bills_page(
     
     # Draw Rows
     pdf.set_font("helvetica", "", 10)
-    row_height = 11.5
-    line_h = 5
+    row_height = 15.5
+    line_h = 7
     
     for reading in meter_readings:
         flat_number = reading.get("flat_number", "")
