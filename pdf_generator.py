@@ -43,8 +43,8 @@ def _draw_bills_page(
     
     # Draw Rows
     pdf.set_font("helvetica", "", 10)
-    row_height = 16
-    line_h = 7
+    row_height = 11.5
+    line_h = 5
     
     for reading in meter_readings:
         flat_number = reading.get("flat_number", "")
@@ -55,12 +55,6 @@ def _draw_bills_page(
         y_start = pdf.get_y()
         x_start = pdf.get_x()
         
-        # Check for page break (landscape A4 height is ~210, bottom margin ~10)
-        if y_start + row_height > 190:
-            pdf.add_page(orientation="L")
-            y_start = pdf.get_y()
-            x_start = pdf.get_x()
-            
         # Draw cells manually
         
         # Col 1: Flat No
@@ -272,3 +266,83 @@ def generate_full_pdf(
     )
     
     return bytes(pdf.output())
+
+def generate_slips_pdf(
+    month_year: str,
+    cost_per_unit: int,
+    meter_readings: list[dict],
+    maintenance_amount: float = 1500.0
+) -> bytes:
+    """Generate a 3x4 grid of cut-out slips for the 12 flats on a single page."""
+    pdf = FPDF(orientation="P", unit="mm", format="A4")
+    pdf.set_auto_page_break(auto=False)
+    pdf.add_page()
+    
+    # A4 Portrait: 210mm x 297mm
+    # 3 cols x 4 rows
+    margin_x = 10
+    margin_y = 15
+    col_w = (210 - (margin_x * 2)) / 3.0
+    row_h = (297 - (margin_y * 2)) / 4.0
+    
+    month_str = _format_month(month_year)
+    
+    for i, reading in enumerate(meter_readings):
+        col = i % 3
+        row = i // 3
+        
+        x = margin_x + (col * col_w)
+        y = margin_y + (row * row_h)
+        
+        # Draw box border for cutting
+        pdf.set_draw_color(150, 150, 150)
+        pdf.rect(x, y, col_w, row_h)
+        
+        # Reset color
+        pdf.set_draw_color(0, 0, 0)
+        
+        # Apartment Name
+        pdf.set_font("helvetica", "B", 12)
+        pdf.set_xy(x, y + 8)
+        pdf.cell(col_w, 6, "Gnapika Residency", align="C")
+        
+        # Billing Month
+        pdf.set_font("helvetica", "", 9)
+        pdf.set_xy(x, y + 14)
+        pdf.cell(col_w, 5, f"Billing Month: {month_str}", align="C")
+        
+        # Flat Number
+        pdf.set_font("helvetica", "B", 15)
+        pdf.set_xy(x, y + 23)
+        pdf.cell(col_w, 6, f"Flat {reading.get('flat_number', '')}", align="C")
+        
+        # Calculations
+        units = int(reading.get("units_used", 0))
+        water_bill = float(reading.get("water_bill", 0.0))
+        
+        pdf.set_font("helvetica", "", 10)
+        pdf.set_xy(x + 5, y + 36)
+        pdf.cell(col_w - 10, 5, f"Water ({units} \u00d7 Rs.{cost_per_unit}):")
+        
+        pdf.set_font("helvetica", "B", 10)
+        pdf.set_xy(x + 5, y + 41)
+        pdf.cell(col_w - 10, 5, f"Rs. {int(water_bill)}", align="R")
+        
+        pdf.set_font("helvetica", "", 10)
+        pdf.set_xy(x + 5, y + 48)
+        pdf.cell(col_w - 10, 5, "Maintenance:")
+        
+        pdf.set_font("helvetica", "B", 10)
+        pdf.set_xy(x + 5, y + 48)
+        pdf.cell(col_w - 10, 5, f"Rs. {int(maintenance_amount)}", align="R")
+        
+        pdf.line(x + 10, y + 55, x + col_w - 10, y + 55)
+        
+        # Total Due
+        total = float(reading.get("total_bill", 0.0))
+        pdf.set_font("helvetica", "B", 12)
+        pdf.set_xy(x + 5, y + 57)
+        pdf.cell(col_w - 10, 6, f"Grand Total: Rs. {int(total)}", align="C")
+
+    return bytes(pdf.output())
+

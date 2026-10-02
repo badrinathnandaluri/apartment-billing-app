@@ -17,7 +17,12 @@ from calculations import (
     BillCalculation,
     ExpenseCalculation,
 )
-from pdf_generator import generate_bills_pdf, generate_summary_pdf, generate_full_pdf
+from pdf_generator import (
+    generate_bills_pdf, 
+    generate_summary_pdf, 
+    generate_full_pdf, 
+    generate_slips_pdf
+)
 
 # ---------------------------------------------------------------------------
 # App configuration
@@ -195,7 +200,7 @@ def page_water_bills():
         ]
         st.dataframe(table_data, use_container_width=True, hide_index=True)
 
-        col_save, col_pdf = st.columns(2)
+        col_save, col_pdf, col_slips = st.columns(3)
         with col_save:
             if st.button("💾 Save Bills", type="primary", use_container_width=True):
                 save_data = calc.to_save_dict()
@@ -209,6 +214,13 @@ def page_water_bills():
                 maintenance_amount=MAINTENANCE_AMOUNT,
             )
             st.download_button("📄 Download Bills PDF", data=pdf_bytes, file_name=f"bills_{month_year}.pdf", mime="application/pdf", use_container_width=True)
+        with col_slips:
+            slips_bytes = generate_slips_pdf(
+                month_year=month_year, cost_per_unit=calc.cost_per_unit,
+                meter_readings=calc.to_save_dict()["meter_readings"],
+                maintenance_amount=MAINTENANCE_AMOUNT,
+            )
+            st.download_button("✂️ Distribution Slips", data=slips_bytes, file_name=f"slips_{month_year}.pdf", mime="application/pdf", use_container_width=True)
 
 # ===================================================================
 # PAGE: Monthly Expenses (Step 2 — Close Month)
@@ -396,7 +408,7 @@ def page_view_records():
             st.dataframe(exp_data, use_container_width=True, hide_index=True)
 
     st.markdown("---")
-    pdf_cols = st.columns(3 if month_status == "closed" else 1)
+    pdf_cols = st.columns(4 if month_status == "closed" else 2)
 
     with pdf_cols[0]:
         pdf1 = generate_bills_pdf(
@@ -404,10 +416,18 @@ def page_view_records():
             total_collection=record["total_collection"], meter_readings=[dict(r) for r in readings],
             maintenance_amount=MAINTENANCE_AMOUNT,
         )
-        st.download_button("📄 Bills PDF (Page 1)", data=pdf1, file_name=f"bills_{selected_month}.pdf", mime="application/pdf", use_container_width=True)
+        st.download_button("📄 Bills PDF", data=pdf1, file_name=f"bills_{selected_month}.pdf", mime="application/pdf", use_container_width=True)
+        
+    with pdf_cols[1]:
+        slips_bytes = generate_slips_pdf(
+            month_year=selected_month, cost_per_unit=record["cost_per_unit"],
+            meter_readings=[dict(r) for r in readings],
+            maintenance_amount=MAINTENANCE_AMOUNT,
+        )
+        st.download_button("✂️ Slips", data=slips_bytes, file_name=f"slips_{selected_month}.pdf", mime="application/pdf", use_container_width=True)
 
     if month_status == "closed":
-        with pdf_cols[1]:
+        with pdf_cols[2]:
             pdf2 = generate_summary_pdf(
                 month_year=selected_month, opening_balance=record["opening_balance"], closing_balance=record["closing_balance"],
                 expenses=[dict(e) for e in expenses], manjeera_bill=record["manjeera_bill"], tanker_count=record["tanker_count"],
@@ -415,9 +435,9 @@ def page_view_records():
                 total_apartment_units=record["total_apartment_units"], total_collection=record["total_collection"],
                 total_expenditure=record["total_expenditure"], net_profit_loss=record["net_profit_loss"], maintenance_amount=MAINTENANCE_AMOUNT,
             )
-            st.download_button("📄 Summary PDF (Page 2)", data=pdf2, file_name=f"summary_{selected_month}.pdf", mime="application/pdf", use_container_width=True)
+            st.download_button("📄 Summary PDF", data=pdf2, file_name=f"summary_{selected_month}.pdf", mime="application/pdf", use_container_width=True)
 
-        with pdf_cols[2]:
+        with pdf_cols[3]:
             pdf_full = generate_full_pdf(
                 month_year=selected_month, opening_balance=record["opening_balance"], closing_balance=record["closing_balance"],
                 expenses=[dict(e) for e in expenses], manjeera_bill=record["manjeera_bill"], tanker_count=record["tanker_count"],
@@ -426,7 +446,7 @@ def page_view_records():
                 total_expenditure=record["total_expenditure"], net_profit_loss=record["net_profit_loss"],
                 meter_readings=[dict(r) for r in readings], maintenance_amount=MAINTENANCE_AMOUNT,
             )
-            st.download_button("📄 Full PDF (Both Pages)", data=pdf_full, file_name=f"full_bill_{selected_month}.pdf", mime="application/pdf", use_container_width=True)
+            st.download_button("📄 Full PDF", data=pdf_full, file_name=f"full_bill_{selected_month}.pdf", mime="application/pdf", use_container_width=True)
 
 
 # ===================================================================
