@@ -43,7 +43,7 @@ def _draw_bills_page(
     
     # Draw Rows
     pdf.set_font("helvetica", "", 10)
-    row_height = 15.5
+    row_height = 20
     line_h = 7
     
     for reading in meter_readings:
