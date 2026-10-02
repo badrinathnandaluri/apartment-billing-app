@@ -435,11 +435,6 @@ def page_view_records():
 def main_app():
     st.sidebar.title("🏢 Apartment Billing")
 
-    if st.sidebar.button("🚪 Logout"):
-        if "token" in st.session_state:
-            del st.session_state["token"]
-        st.rerun()
-
     has_setup = db.has_initial_setup()
     all_months = db.get_all_months()
 
