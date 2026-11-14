@@ -1,3 +1,7 @@
-streamlit>=1.30.0
-fpdf2>=2.7.0
-psycopg2-binary>=2.9.0
+streamlit==1.67.0
+fpdf2==2.9.0
+psycopg2-binary==2.9.13
+SQLAlchemy==2.1.8
+tenacity==9.2.1
+altair==6.3.0
+pandas==3.1.1

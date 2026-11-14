@@ -1,6 +1,8 @@
-.streamlit/
+.streamlit/secrets.toml
 __pycache__/
 *.pyc
+.venv/
 .env
+.pytest_cache/
+backups/
 apartment_billing.db
-test_integration.py
