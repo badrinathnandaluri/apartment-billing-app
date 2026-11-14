@@ -1,0 +1,20 @@
+[theme]
+base = "light"
+primaryColor = "#0f4c81"
+backgroundColor = "#f5f7fb"
+secondaryBackgroundColor = "#ffffff"
+textColor = "#0f172a"
+borderColor = "#e2e8f0"
+baseRadius = "10px"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+headingFont = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+
+[client]
+toolbarMode = "minimal"
+showErrorDetails = "none"
+
+[server]
+runOnSave = false
+
+[browser]
+gatherUsageStats = false

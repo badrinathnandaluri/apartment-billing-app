@@ -1,0 +1,36 @@
+name: Keep database awake
+
+# Supabase pauses free projects after ~7 days without activity.
+# This writes a heartbeat row twice a week so that never happens.
+# Setup: repo → Settings → Secrets and variables → Actions → New secret
+#        Name: DB_URL   Value: the same connection string as the app's db_url
+on:
+  schedule:
+    - cron: "17 3 * * 1,4"   # Mon & Thu 03:17 UTC (08:47 IST)
+  workflow_dispatch: {}       # "Run workflow" button for a manual test
+
+permissions:
+  contents: read
+  actions: write   # only used by the last step, to keep this schedule enabled
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "SQLAlchemy==2.1.8" "psycopg2-binary==2.9.13" "tenacity==9.2.1"
+      - run: python scripts/keepalive.py
+        env:
+          DB_URL: ${{ secrets.DB_URL }}
+      # GitHub switches off scheduled workflows after 60 days without repo activity.
+      # Re-enabling the workflow on every run resets that timer.
+      - name: Keep this schedule enabled
+        if: always()
+        continue-on-error: true
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/keepalive.yml/enable"
+        env:
+          GH_TOKEN: ${{ github.token }}
